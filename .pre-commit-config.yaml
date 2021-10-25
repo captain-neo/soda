@@ -1,0 +1,16 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks.git
+    rev: v4.0.1
+    hooks:
+      - id: check-json
+      - id: check-toml
+      - id: check-yaml
+        exclude: ^deployment/charts/templates/
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-added-large-files
+
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v1.42.1
+    hooks:
+      - id: golangci-lint
