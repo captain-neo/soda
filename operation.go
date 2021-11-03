@@ -116,6 +116,7 @@ func (op *Operation) ValidationHandler() fiber.Handler {
 			return err
 		}
 		c.Locals(KeyRequestBody, body)
+		// TODO: check response also?
 		return c.Next()
 	}
 }
