@@ -6,6 +6,7 @@ import (
 	"log"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gofiber/fiber/v2"
@@ -54,6 +55,7 @@ func (op *Operation) SetOperationID(id string) *Operation {
 func (op *Operation) SetParameters(model interface{}) *Operation {
 	op.tParameters = reflect.TypeOf(model)
 	op.operation.Parameters = op.soda.oaiGenerator.ResolveParameters(op.tParameters)
+	// TODO: do we need this?
 	op.parametersNameKV = make(map[string]string, len(op.operation.Parameters))
 	for i := 0; i < op.tParameters.NumField(); i++ {
 		f := op.tParameters.Field(i)
@@ -116,7 +118,7 @@ func (op *Operation) ValidationHandler() fiber.Handler {
 			return err
 		}
 		c.Locals(KeyRequestBody, body)
-		// TODO: check response also?
+		// TODO: validate response also?
 		return c.Next()
 	}
 }
@@ -131,11 +133,17 @@ func (op *Operation) validateParameters(c *fiber.Ctx) (interface{}, error) {
 		m[op.parametersNameKV[param.Value.Name]] = v
 	}
 	// here we use mapstructure to transform an interface{} to struct
-	v := reflect.New(op.tParameters).Interface()
-	if err := mapstructure.WeakDecode(m, v); err != nil {
-		return v, err
+	val := reflect.New(op.tParameters).Interface()
+	var mapDecoderConfig = &mapstructure.DecoderConfig{
+		Result:    &val,
+		TagName:   OpenAPITag,
+		MatchName: extractNameTagFunction,
 	}
-	return v, nil
+	decoder, _ := mapstructure.NewDecoder(mapDecoderConfig)
+	if err := decoder.Decode(m); err != nil {
+		return val, err
+	}
+	return val, nil
 }
 
 func (op *Operation) validateParameter(c *fiber.Ctx, parameter *openapi3.Parameter) (interface{}, error) {
@@ -269,11 +277,32 @@ func (op *Operation) validateRequestBody(c *fiber.Ctx) (interface{}, error) {
 		}
 	}
 	ret := reflect.New(op.tRequestBody).Interface()
-	if err := mapstructure.WeakDecode(value, &ret); err != nil{
+
+	var mapDecoderConfig = &mapstructure.DecoderConfig{
+		Result:    &ret,
+		TagName:   OpenAPITag,
+		MatchName: extractNameTagFunction,
+	}
+	decoder, _ := mapstructure.NewDecoder(mapDecoderConfig)
+	if err := decoder.Decode(value); err != nil {
 		return nil, ValidationError{
 			Position: "request body",
 			Reason:   err.Error(),
 		}
 	}
 	return ret, nil
+}
+
+func extractNameTagFunction(fieldName string, tag string) bool {
+	for _, prop := range strings.Split(tag, ",") {
+		prop = strings.TrimSpace(prop)
+		if strings.HasPrefix(prop, propName) {
+			kv := strings.Split(prop, "=")
+			if len(kv) == 0 {
+				return false
+			}
+			return strings.TrimSpace(kv[1]) == fieldName
+		}
+	}
+	return false
 }
