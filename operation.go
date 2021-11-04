@@ -238,7 +238,8 @@ func (op *Operation) validateRequestBody(c *fiber.Ctx) (interface{}, error) {
 		// A JSON schema that describes the received data is not declared, so skip validation.
 		return nil, nil
 	}
-	value := reflect.New(op.tRequestBody).Interface()
+	value := make(map[string]interface{})
+	// value := reflect.New(op.tRequestBody).Interface()
 	if err := c.BodyParser(&value); err != nil {
 		return value, ValidationError{
 			Field:    "",
@@ -252,18 +253,27 @@ func (op *Operation) validateRequestBody(c *fiber.Ctx) (interface{}, error) {
 
 	// Validate JSON with the schema
 	if err := contentType.Schema.Value.VisitJSON(value, opts...); err != nil {
-		var e *openapi3.SchemaError
-		if ok := errors.Is(err, e); ok {
+		// var e *openapi3.SchemaError
+		if e, ok := err.(*openapi3.SchemaError); ok {
 			return nil, ValidationError{
 				Field:    e.SchemaField,
 				Position: "request body",
 				Reason:   e.Reason,
 			}
 		}
+		if err != nil {
+			return nil, ValidationError{
+				Position: "request body",
+				Reason:   err.Error(),
+			}
+		}
+	}
+	ret := reflect.New(op.tRequestBody).Interface()
+	if err := mapstructure.WeakDecode(value, &ret); err != nil{
 		return nil, ValidationError{
 			Position: "request body",
 			Reason:   err.Error(),
 		}
 	}
-	return value, nil
+	return ret, nil
 }

@@ -18,7 +18,7 @@ const (
 
 // schema props.
 const (
-	propName             = "rawName"
+	propName             = "name"
 	propTitle            = "title"
 	propDescription      = "description"
 	propType             = "type"
