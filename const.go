@@ -18,31 +18,35 @@ const (
 
 // schema props.
 const (
-	propName             = "name"
-	propTitle            = "title"
-	propDescription      = "description"
-	propType             = "type"
-	propRequired         = "required"
-	propNullable         = "nullable"
-	propAllowEmptyValue  = "allowEmptyValue"
-	propDeprecated       = "deprecated"
-	propReadOnly         = "readOnly"
-	propWriteOnly        = "writeOnly"
+	propName = "name"
+	// generic properties.
+	propTitle           = "title"
+	propDescription     = "description"
+	propType            = "type"
+	propDeprecated      = "deprecated"
+	propAllowEmptyValue = "allowEmptyValue"
+	propNullable        = "nullable"
+	propReadOnly        = "readOnly"
+	propWriteOnly       = "writeOnly"
+	propEnum            = "enum"
+	propDefault         = "default"
+	propExample         = "example"
+	propRequired        = "required"
+	// string specified properties.
+	propMinLength = "minLength"
+	propMaxLength = "maxLength"
+	propPattern   = "pattern"
+	propFormat    = "format"
+	// number specified properties.
 	propMultipleOf       = "multipleOf"
 	propMinimum          = "minimum"
 	propMaximum          = "maximum"
 	propExclusiveMaximum = "exclusiveMaximum"
 	propExclusiveMinimum = "exclusiveMinimum"
-	propDefault          = "default"
-	propExample          = "example"
-	propEnum             = "enum"
-	propMinLength        = "minLength"
-	propMaxLength        = "maxLength"
-	propPattern          = "pattern"
-	propFormat           = "format"
-	propMinItems         = "minItems"
-	propMaxItems         = "maxItems"
-	propUniqueItems      = "uniqueItems"
+	// array specified properties.
+	propMinItems    = "minItems"
+	propMaxItems    = "maxItems"
+	propUniqueItems = "uniqueItems"
 )
 
 const (

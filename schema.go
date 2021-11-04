@@ -196,29 +196,34 @@ func (g *OAIGenerator) getSchema(parents []reflect.Type, t reflect.Type) (*opena
 	case reflect.Interface:
 		return openapi3.NewBytesSchema().WithAnyAdditionalProperties().NewRef(), false
 	case reflect.Int:
-		return openapi3.NewIntegerSchema().WithMin(math.MinInt).WithMax(math.MaxInt).NewRef(), false
-	case reflect.Int8:
-		return openapi3.NewIntegerSchema().WithMin(math.MinInt8).WithMax(math.MaxInt8).NewRef(), false
-	case reflect.Int16:
-		return openapi3.NewIntegerSchema().WithMin(math.MinInt16).WithMax(math.MaxInt16).NewRef(), false
-	case reflect.Int32:
-		return openapi3.NewInt32Schema().WithMin(math.MinInt32).WithMax(math.MaxInt32).NewRef(), false
-	case reflect.Int64:
-		return openapi3.NewInt64Schema().WithMin(math.MinInt64).WithMax(math.MaxInt64).NewRef(), false
+		return openapi3.NewIntegerSchema().NewRef(), false
 	case reflect.Uint:
 		return openapi3.NewIntegerSchema().WithMin(0).WithMax(math.MaxUint).NewRef(), false
+	case reflect.Int8:
+		return openapi3.NewIntegerSchema().WithMin(math.MinInt8).WithMax(math.MaxInt8).NewRef(), false
 	case reflect.Uint8:
 		return openapi3.NewIntegerSchema().WithMin(0).WithMax(math.MaxUint8).NewRef(), false
+
+	case reflect.Int16:
+		return openapi3.NewIntegerSchema().WithMin(math.MinInt16).WithMax(math.MaxInt16).NewRef(), false
 	case reflect.Uint16:
 		return openapi3.NewIntegerSchema().WithMin(0).WithMax(math.MaxUint16).NewRef(), false
+
+	case reflect.Int32:
+		return openapi3.NewInt32Schema().WithMin(math.MinInt32).WithMax(math.MaxInt32).NewRef(), false
 	case reflect.Uint32:
 		return openapi3.NewInt32Schema().WithMin(0).WithMax(math.MaxUint32).NewRef(), false
+
+	case reflect.Int64:
+		return openapi3.NewInt64Schema().NewRef(), false
 	case reflect.Uint64:
-		return openapi3.NewInt64Schema().WithMin(0).WithMax(math.MaxUint64).NewRef(), false
+		return openapi3.NewInt64Schema().WithMin(0).NewRef(), false
+
 	case reflect.Float32:
-		return openapi3.NewFloat64Schema().WithFormat("float").WithMin(math.SmallestNonzeroFloat32).WithMax(math.MaxFloat32).NewRef(), false
+		return openapi3.NewFloat64Schema().WithFormat("float").NewRef(), false
 	case reflect.Float64:
-		return openapi3.NewFloat64Schema().WithFormat("double").WithMin(math.SmallestNonzeroFloat64).WithMax(math.MaxFloat64).NewRef(), false
+		return openapi3.NewFloat64Schema().WithFormat("double").NewRef(), false
+
 	case reflect.Bool:
 		return openapi3.NewBoolSchema().NewRef(), false
 	case reflect.String:

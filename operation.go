@@ -134,13 +134,7 @@ func (op *Operation) validateParameters(c *fiber.Ctx) (interface{}, error) {
 	}
 	// here we use mapstructure to transform an interface{} to struct
 	val := reflect.New(op.tParameters).Interface()
-	var mapDecoderConfig = &mapstructure.DecoderConfig{
-		Result:    &val,
-		TagName:   OpenAPITag,
-		MatchName: extractNameTagFunction,
-	}
-	decoder, _ := mapstructure.NewDecoder(mapDecoderConfig)
-	if err := decoder.Decode(m); err != nil {
+	if err := mapstructureDecode(m, &val); err != nil {
 		return val, err
 	}
 	return val, nil
@@ -278,13 +272,7 @@ func (op *Operation) validateRequestBody(c *fiber.Ctx) (interface{}, error) {
 	}
 	ret := reflect.New(op.tRequestBody).Interface()
 
-	var mapDecoderConfig = &mapstructure.DecoderConfig{
-		Result:    &ret,
-		TagName:   OpenAPITag,
-		MatchName: extractNameTagFunction,
-	}
-	decoder, _ := mapstructure.NewDecoder(mapDecoderConfig)
-	if err := decoder.Decode(value); err != nil {
+	if err := mapstructureDecode(value, &ret); err != nil {
 		return nil, ValidationError{
 			Position: "request body",
 			Reason:   err.Error(),
@@ -293,16 +281,29 @@ func (op *Operation) validateRequestBody(c *fiber.Ctx) (interface{}, error) {
 	return ret, nil
 }
 
-func extractNameTagFunction(fieldName string, tag string) bool {
-	for _, prop := range strings.Split(tag, ",") {
-		prop = strings.TrimSpace(prop)
-		if strings.HasPrefix(prop, propName) {
-			kv := strings.Split(prop, "=")
-			if len(kv) == 0 {
-				return false
+// mapstructureDecode decode a map[string]interface{}(src) to a struct(dst)
+func mapstructureDecode(src, dst interface{}) error {
+	var mapDecoderConfig = &mapstructure.DecoderConfig{
+		Result:  dst,
+		TagName: OpenAPITag,
+		// find the propName tag and match
+		MatchName: func(fieldName, tag string) bool {
+			for _, prop := range strings.Split(tag, ",") {
+				prop = strings.TrimSpace(prop)
+				if strings.HasPrefix(prop, propName) {
+					kv := strings.Split(prop, "=")
+					if len(kv) == 0 {
+						return false
+					}
+					return strings.TrimSpace(kv[1]) == fieldName
+				}
 			}
-			return strings.TrimSpace(kv[1]) == fieldName
-		}
+			return false
+		},
 	}
-	return false
+	decoder, err := mapstructure.NewDecoder(mapDecoderConfig)
+	if err != nil {
+		return err
+	}
+	return decoder.Decode(src)
 }

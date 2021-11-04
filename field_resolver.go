@@ -5,15 +5,12 @@ import (
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/gofiber/fiber/v2/utils"
 )
 
 type fieldResolver struct {
 	f             *reflect.StructField
 	ignored       bool
 	tagPairs      map[string]string
-	jsonName      string
-	jsonOmitempty bool
 }
 
 func newFieldResolver(f reflect.StructField) *fieldResolver {
@@ -22,15 +19,6 @@ func newFieldResolver(f reflect.StructField) *fieldResolver {
 		ignored:  false,
 		tagPairs: nil,
 	}
-	if jsonTags, ok := f.Tag.Lookup("json"); ok {
-		if jsonTags[0] == '-' {
-			resolver.ignored = true
-		}
-		tags := strings.Split(jsonTags, ",")
-		resolver.jsonName = tags[0]
-		resolver.jsonOmitempty = strings.Contains(jsonTags, "omitempty")
-	}
-
 	if oaiTags, oaiOK := f.Tag.Lookup(OpenAPITag); oaiOK {
 		tags := strings.Split(oaiTags, ",")
 		if tags[0] == "-" {
@@ -39,12 +27,12 @@ func newFieldResolver(f reflect.StructField) *fieldResolver {
 		}
 		resolver.tagPairs = make(map[string]string)
 		for _, tag := range tags {
-			tag = utils.Trim(tag, ' ')
+			tag = strings.TrimSpace(tag)
 			pair := strings.Split(tag, "=")
 			if len(pair) == 2 {
-				resolver.tagPairs[pair[0]] = pair[1]
+				resolver.tagPairs[strings.TrimSpace(pair[0])] = strings.TrimSpace(pair[1])
 			} else {
-				resolver.tagPairs[pair[0]] = ""
+				resolver.tagPairs[strings.TrimSpace(pair[0])] = ""
 			}
 		}
 	}
@@ -78,19 +66,7 @@ func (s fieldResolver) name() string {
 	if name, ok := s.tagPairs[propName]; ok {
 		return name
 	}
-	if s.jsonName != "" {
-		return s.jsonName
-	}
 	return s.f.Name
-}
-func (s fieldResolver) nullable() bool {
-	if _, ok := s.tagPairs[propNullable]; ok {
-		return true
-	}
-	if s.jsonOmitempty {
-		return true
-	}
-	return false
 }
 
 func (s fieldResolver) shouldEmbed() bool {
@@ -100,22 +76,22 @@ func (s fieldResolver) shouldEmbed() bool {
 func (s *fieldResolver) resolveGeneric(schema *openapi3.Schema) {
 	for tag, val := range s.tagPairs {
 		switch tag {
-		case propDeprecated:
-			schema.Deprecated = toBool(val)
-		case propAllowEmptyValue:
-			schema.AllowEmptyValue = toBool(val)
-		case propNullable:
-			schema.Nullable = s.nullable()
-		case propWriteOnly:
-			schema.WriteOnly = toBool(val)
-		case propReadOnly:
-			schema.ReadOnly = toBool(val)
 		case propTitle:
 			schema.Title = val
 		case propDescription:
 			schema.Description = val
 		case propType:
 			schema.Type = val
+		case propDeprecated:
+			schema.Deprecated = toBool(val)
+		case propAllowEmptyValue:
+			schema.AllowEmptyValue = toBool(val)
+		case propNullable:
+			schema.Nullable = toBool(val)
+		case propWriteOnly:
+			schema.WriteOnly = toBool(val)
+		case propReadOnly:
+			schema.ReadOnly = toBool(val)
 		}
 	}
 }
