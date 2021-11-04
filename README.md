@@ -32,8 +32,6 @@ type ExampleRequestBody struct {
 	StringSlice     []string `oai:"name=string_slice" json:"string_slice"`
 }
 
-type ErrorResponse struct{}
-
 func exampleHandler(c *fiber.Ctx) error {
 	// get parameter values
 	parameters := c.Locals(soda.KeyParameter).(*ExampleParameters)
@@ -48,7 +46,14 @@ func exampleHandler(c *fiber.Ctx) error {
 
 func main() {
 	log.SetFlags(log.Lshortfile)
-	f := fiber.New(fiber.Config{})
+	f := fiber.New(fiber.Config{
+		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
+			if e, ok := err.(soda.ValidationError); ok {
+				return ctx.Status(422).JSON(e)
+			}
+			return ctx.SendStatus(500)
+		},
+	})
 	f.Use(logger.New(), requestid.New())
 	app := soda.NewSodaWithFiber(f, &soda.Info{
 		Title:          "Example Soda APP",
@@ -68,7 +73,7 @@ func main() {
 		SetJSONRequestBody(ExampleRequestBody{}).
 		SetParameters(ExampleParameters{}).
 		AddJSONResponse(200, ExampleRequestBody{}).
-		AddJSONResponse(400, ErrorResponse{}).Mount()
+		AddJSONResponse(422, soda.ValidationError{}).Mount()
 
 	app.App.Listen(":8080")
 }
