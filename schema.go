@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/gofiber/fiber/v2/utils"
 )
 
 var (
@@ -27,32 +26,6 @@ type getOAISchema interface {
 }
 
 var getOAISchemaFunc = reflect.TypeOf((*getOAISchema)(nil)).Elem()
-
-func (g *OAIGenerator) GenerateJSONRequestBody(operationID string, model reflect.Type) *openapi3.RequestBodyRef {
-	schema := g.getSchemaRef(model)
-	requestBody := openapi3.NewRequestBody().WithJSONSchemaRef(schema).WithRequired(true)
-	requestName := toCamelCase(operationID)
-
-	// TODO: check if duplicate name
-	g.openapi.Components.RequestBodies[requestName] = &openapi3.RequestBodyRef{
-		Value: requestBody,
-	}
-	return &openapi3.RequestBodyRef{
-		Ref:   fmt.Sprintf("#/components/requestBodies/%s", requestName),
-		Value: requestBody,
-	}
-}
-
-func (g *OAIGenerator) GenerateResponse(operationID string, status int, model reflect.Type) *openapi3.ResponseRef {
-	ref := g.getSchemaRef(model)
-	responseName := fmt.Sprintf("%s%s", toCamelCase(operationID), strings.ReplaceAll(utils.StatusMessage(status), " ", ""))
-	response := openapi3.NewResponse().WithJSONSchemaRef(ref).WithDescription(utils.StatusMessage(status))
-
-	// TODO: check if has a duplicate name
-	g.openapi.Components.Responses[responseName] = &openapi3.ResponseRef{Value: response}
-
-	return &openapi3.ResponseRef{Ref: fmt.Sprintf("#/components/responses/%s", responseName), Value: response}
-}
 
 func (g *OAIGenerator) getSchemaName(rf reflect.Type) string {
 	return strings.ReplaceAll(rf.String(), ".", "")

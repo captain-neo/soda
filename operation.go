@@ -16,6 +16,7 @@ import (
 
 type Operation struct {
 	operation        *openapi3.Operation
+	middlewares      []fiber.Handler
 	handler          fiber.Handler
 	path             string
 	method           string
@@ -23,18 +24,6 @@ type Operation struct {
 	tParameters      reflect.Type
 	tRequestBody     reflect.Type
 	soda             *Soda
-}
-
-func (s *Soda) NewOperation(path, method string, handler fiber.Handler) *Operation {
-	op := &Operation{
-		soda:      s,
-		path:      path,
-		method:    utils.ToUpper(method),
-		operation: openapi3.NewOperation(),
-		handler:   handler,
-	}
-	op.operation.OperationID = toKebabCase(utils.ToLower(method) + getHandlerName(handler))
-	return op
 }
 
 func (op *Operation) SetDescription(desc string) *Operation {
@@ -54,7 +43,7 @@ func (op *Operation) SetOperationID(id string) *Operation {
 
 func (op *Operation) SetParameters(model interface{}) *Operation {
 	op.tParameters = reflect.TypeOf(model)
-	op.operation.Parameters = op.soda.oaiGenerator.ResolveParameters(op.tParameters)
+	op.operation.Parameters = op.soda.oaiGenerator.GenerateParameters(op.tParameters)
 	// TODO: do we need this?
 	op.parametersNameKV = make(map[string]string, len(op.operation.Parameters))
 	for i := 0; i < op.tParameters.NumField(); i++ {
@@ -100,7 +89,11 @@ func (op *Operation) Mount() {
 		log.Fatalln(err)
 	}
 	op.soda.oaiGenerator.openapi.AddOperation(op.path, op.method, op.operation)
-	op.soda.App.Add(op.method, op.path, op.ValidationHandler(), op.handler)
+	handlers := make([]fiber.Handler, 0, len(op.middlewares)+2)
+	handlers = append(handlers, op.ValidationHandler())
+	handlers = append(handlers, op.middlewares...)
+	handlers = append(handlers, op.handler)
+	op.soda.fiber.Add(op.method, op.path, handlers...)
 }
 
 func (op *Operation) ValidationHandler() fiber.Handler {
@@ -207,10 +200,10 @@ func (op *Operation) validateRequestBody(c *fiber.Ctx) (interface{}, error) {
 	if op.operation.RequestBody == nil {
 		return nil, nil
 	}
-	requestBody := op.operation.RequestBody.Value
+	bodySchema := op.operation.RequestBody.Value
 
 	if len(c.Body()) == 0 {
-		if requestBody.Required {
+		if bodySchema.Required {
 			return nil, ValidationError{
 				Position: "request body",
 				Reason:   "request body is empty",
@@ -219,7 +212,7 @@ func (op *Operation) validateRequestBody(c *fiber.Ctx) (interface{}, error) {
 		return nil, nil
 	}
 
-	content := requestBody.Content
+	content := bodySchema.Content
 	if len(content) == 0 {
 		// A request's body does not have declared content, so skip validation.
 		return nil, nil
@@ -227,7 +220,7 @@ func (op *Operation) validateRequestBody(c *fiber.Ctx) (interface{}, error) {
 
 	cType := utils.ToLower(utils.UnsafeString(c.Request().Header.ContentType()))
 	cType = utils.ParseVendorSpecificContentType(cType)
-	contentType := requestBody.Content.Get(cType)
+	contentType := bodySchema.Content.Get(cType)
 	if contentType == nil {
 		return nil, ValidationError{
 			Field:    "ContentType",

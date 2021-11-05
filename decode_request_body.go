@@ -8,6 +8,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/utils"
 	"gopkg.in/yaml.v2"
 )
 
@@ -69,13 +70,14 @@ func parseMediaType(contentType string) string {
 // decodeBody returns a decoded body.
 // The function returns ParseError when a body is invalid.
 func decodeBody(c *fiber.Ctx, schema *openapi3.SchemaRef, encFn EncodingFn) (interface{}, error) {
-	contentType := c.Get(fiber.HeaderContentType)
+
+	contentType := c.Request().Header.ContentType()
 	// if contentType == "" {
 	// 	if _, ok := body.(*multipart.Part); ok {
 	// 		contentType = "text/plain"
 	// 	}
 	// }
-	mediaType := parseMediaType(contentType)
+	mediaType := parseMediaType(utils.UnsafeString(contentType))
 	decoder, ok := bodyDecoders[mediaType]
 	if !ok {
 		return nil, &ParseError{
@@ -186,9 +188,6 @@ func multipartBodyDecoder(c *fiber.Ctx, schema *openapi3.SchemaRef, encFn Encodi
 		// Every such part has a type that is defined by an items schema in the property's schema.
 		var valueSchema *openapi3.SchemaRef
 		var exists bool
-		// mr := multipart.NewReader(body, params["boundary"])
-		// p, _ := mr.NextPart()
-		// p.FormName()
 		valueSchema, exists = schema.Value.Properties[name]
 		if !exists {
 			anyProperties := schema.Value.AdditionalPropertiesAllowed

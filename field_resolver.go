@@ -8,9 +8,9 @@ import (
 )
 
 type fieldResolver struct {
-	f             *reflect.StructField
-	ignored       bool
-	tagPairs      map[string]string
+	f        *reflect.StructField
+	ignored  bool
+	tagPairs map[string]string
 }
 
 func newFieldResolver(f reflect.StructField) *fieldResolver {
