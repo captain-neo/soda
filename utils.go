@@ -21,7 +21,9 @@ func parseIntSlice(val string) interface{} {
 	ss := strings.Split(val, " ")
 	result := make([]interface{}, 0, len(ss))
 	for _, s := range ss {
-		result = append(result, toInt(s))
+		if v, e := toIntE(s); e == nil {
+			result = append(result, v)
+		}
 	}
 	return result
 }
@@ -30,7 +32,9 @@ func parseFloatSlice(val string) interface{} {
 	ss := strings.Split(val, " ")
 	result := make([]interface{}, 0, len(ss))
 	for _, s := range ss {
-		result = append(result, toFloat(s))
+		if v, e := toFloatE(s); e == nil {
+			result = append(result, v)
+		}
 	}
 	return result
 }
@@ -48,13 +52,21 @@ func toUint(v string) uint64 {
 	return u
 }
 
+func toIntE(v string) (int, error) {
+	return strconv.Atoi(v)
+}
+
 func toInt(v string) int {
-	i, _ := strconv.Atoi(v)
+	i, _ := toIntE(v)
 	return i
 }
 
+func toFloatE(v string) (float64, error) {
+	return strconv.ParseFloat(v, 64)
+}
+
 func toFloat(v string) float64 {
-	f, _ := strconv.ParseFloat(v, 64)
+	f, _ := toFloatE(v)
 	return f
 }
 

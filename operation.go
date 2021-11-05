@@ -240,13 +240,14 @@ func (op *Operation) validateRequestBody(c *fiber.Ctx) (interface{}, error) {
 		// A JSON schema that describes the received data is not declared, so skip validation.
 		return nil, nil
 	}
-	value := make(map[string]interface{})
-	// value := reflect.New(op.tRequestBody).Interface()
-	if err := c.BodyParser(&value); err != nil {
-		return value, ValidationError{
-			Field:    "",
+
+	encFn := func(name string) *openapi3.Encoding { return contentType.Encoding[name] }
+	value, err := decodeBody(c, contentType.Schema, encFn)
+	if err != nil {
+		return nil, ValidationError{
+			Field:    "ContentType",
 			Position: "request body",
-			Reason:   "parse request body failed",
+			Reason:   "failed to decode request body",
 		}
 	}
 
