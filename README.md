@@ -18,42 +18,41 @@ import (
 	"github.com/panicneo/soda"
 )
 
-type ExampleParameters struct {
-	Limit  int `oai:"in=query,name=limit,default=10"`
-	Offset int `oai:"in=query,name=offset,default=1"`
+type ExampleRequestBody struct {
+	Int             int   `json:"int,omitempty"`
+	IntDefault      int   `json:"int_default,omitempty"`
+	IntSlice        []int `json:"int_slice,omitempty"`
+	IntSliceDefault []int
+	String          string
+	StringSlice     []string
 }
 
-type ExampleRequestBody struct {
-	Int             int      `oai:"name=int" json:"int"`
-	IntDefault      int      `oai:"name=int_default" json:"int_default"`
-	IntSlice        []int    `oai:"name=int_slice" json:"int_slice"`
-	IntSliceDefault []int    `oai:"name=int_slice_default" json:"int_slice_default"`
-	String          string   `oai:"name=string" json:"string"`
-	StringSlice     []string `oai:"name=string_slice" json:"string_slice"`
+type ExampleParameters struct {
+	Limit  int `oai:"in=query,default=10"`
+	Offset int `oai:"in=query,default=1"`
 }
+
+type ExampleResponse struct {
+	Int             int   `json:"int,omitempty"`
+	IntDefault      int   `json:"int_default,omitempty"`
+	IntSlice        []int `json:"int_slice,omitempty"`
+	IntSliceDefault []int
+	String          string   `json:"string,omitempty"`
+	StringSlice     []string `json:"string_slice,omitempty"`
+}
+type ErrorResponse struct{}
 
 func exampleHandler(c *fiber.Ctx) error {
-	// get parameter values
+  // get parameter values
 	parameters := c.Locals(soda.KeyParameter).(*ExampleParameters)
-	// get request body values
+  // get request body values
 	body := c.Locals(soda.KeyRequestBody).(*ExampleRequestBody)
-
-	log.Println(parameters.Limit)
-	log.Println(parameters.Offset)
-
-	return c.Status(200).JSON(body)
+	log.Println(parameters, body)
+	return nil
 }
 
 func main() {
-	log.SetFlags(log.Lshortfile)
-	f := fiber.New(fiber.Config{
-		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
-			if e, ok := err.(soda.ValidationError); ok {
-				return ctx.Status(422).JSON(e)
-			}
-			return ctx.SendStatus(500)
-		},
-	})
+	f := fiber.New(fiber.Config{})
 	f.Use(logger.New(), requestid.New())
 	app := soda.NewSodaWithFiber(f, &soda.Info{
 		Title:          "Example Soda APP",
@@ -70,14 +69,13 @@ func main() {
 	})
 	app.NewOperation("/path", "POST", exampleHandler).
 		SetOperationID("example-handler").
-		SetJSONRequestBody(ExampleRequestBody{}).
+		SetJSONRequestBody(ExampleResponse{}).
 		SetParameters(ExampleParameters{}).
-		AddJSONResponse(200, ExampleRequestBody{}).
-		AddJSONResponse(422, soda.ValidationError{}).Mount()
+		AddJSONResponse(200, ExampleResponse{}).
+		AddJSONResponse(400, ErrorResponse{}).Mount()
 
 	app.App.Listen(":8080")
 }
-
 ```
 
 check your openapi3 spec file at http://localhost:8080/openapi.json
