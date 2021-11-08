@@ -87,7 +87,7 @@ func (s *Soda) Fiber() *fiber.App {
 	return s.fiber
 }
 
-func (s *Soda) GetOpenAPISpec() []byte {
+func (s *Soda) GetOpenAPIJSON() []byte {
 	s.specOnce.Do(func() {
 		if err := s.oaiGenerator.openapi.Validate(context.TODO()); err != nil {
 			log.Fatalln(err)
@@ -99,4 +99,8 @@ func (s *Soda) GetOpenAPISpec() []byte {
 		s.spec = spec
 	})
 	return s.spec
+}
+
+func (s *Soda) GetOpenAPI() *openapi3.T {
+	return s.oaiGenerator.openapi
 }

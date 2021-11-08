@@ -7,15 +7,12 @@ require (
 	github.com/go-playground/assert v1.2.1
 	github.com/gofiber/fiber/v2 v2.21.0
 	github.com/mitchellh/mapstructure v1.4.2
-	github.com/onsi/gomega v1.15.0
 	github.com/valyala/fasthttp v1.31.0
 )
 
 require (
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
 	github.com/google/pprof v0.0.0-20210407192527-94a9f03dee38 // indirect
-	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect
-	golang.org/x/text v0.3.6 // indirect
 	golang.org/x/tools v0.0.0-20201224043029-2b0845dc783e // indirect
 )
 
