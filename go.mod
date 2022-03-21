@@ -7,7 +7,7 @@ require (
 	github.com/go-playground/assert v1.2.1
 	github.com/gofiber/fiber/v2 v2.28.0
 	github.com/mitchellh/mapstructure v1.4.3
-	github.com/valyala/fasthttp v1.33.0
+	github.com/valyala/fasthttp v1.34.0
 )
 
 require (
@@ -22,7 +22,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/swag v0.21.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/klauspost/compress v1.14.4 // indirect
+	github.com/klauspost/compress v1.15.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/onsi/ginkgo v1.16.6-0.20211102192025-b98644f2f64c
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
