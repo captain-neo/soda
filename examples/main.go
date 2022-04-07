@@ -1,21 +1,42 @@
 package main
 
 import (
+	"github.com/captain-neo/soda"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
-	"github.com/panicneo/soda"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
 )
 
-type Item struct {
-	Name string `json:"name" oai:"description=名字;example=Item 1"`
-	Type string `json:"type" oai:"description=类型;"`
+type ExampleRequestBody struct {
+	Int             int   `json:"int,omitempty"`
+	IntDefault      int   `json:"int_default,omitempty"`
+	IntSlice        []int `json:"int_slice,omitempty"`
+	IntSliceDefault []int
+	String          string
+	StringSlice     []string
 }
 
-type Body struct {
-	Parameters []Item `json:"parameters"`
-	ReturnType string `json:"return_type"`
-	Body       string `json:"body"`
+type ExampleParameters struct {
+	Limit  int `oai:",default=10"`
+	Offset int `oai:"in=query,default=1"`
+}
+
+type ExampleResponse struct {
+	Parameters  *ExampleParameters  `json:"parameters"`
+	RequestBody *ExampleRequestBody `json:"request_body"`
+}
+type ErrorResponse struct{}
+
+func exampleHandler(c *fiber.Ctx) error {
+	// get parameter values
+	parameters := c.Locals(soda.KeyParameter).(*ExampleParameters)
+	// get request body values
+	body := c.Locals(soda.KeyRequestBody).(*ExampleRequestBody)
+	return c.Status(200).JSON(ExampleResponse{
+		Parameters:  parameters,
+		RequestBody: body,
+	})
 }
 
 func main() {
@@ -26,17 +47,14 @@ func main() {
 		soda.WithRedoc("/redoc"),
 		soda.EnableValidateRequest(),
 	)
-	app.Use(logger.New())
+	app.Use(logger.New(), requestid.New())
 	app.Get("/monitor", monitor.New()).SetSummary("it's a monitor").OK()
+	app.Post("/path", exampleHandler).
+		SetOperationID("example-handler").
+		SetJSONRequestBody(ExampleResponse{}).
+		SetParameters(ExampleParameters{}).
+		AddJSONResponse(200, ExampleResponse{}).
+		AddJSONResponse(400, ErrorResponse{}).OK()
 
-	app.Post("/", TestPost).
-		SetJSONRequestBody(Body{}).
-		AddJSONResponse(200, Body{}).
-		OK()
-	_ = app.Listen(":3000")
-}
-
-func TestPost(ctx *fiber.Ctx) error {
-	body := ctx.Locals(soda.KeyRequestBody).(*Body)
-	return ctx.Status(200).JSON(body)
+	_ = app.App.Listen(":8080")
 }

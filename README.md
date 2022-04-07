@@ -1,4 +1,4 @@
-# Soda [WIP]
+# Soda
 
 soda := [OpenAPI3.0](https://swagger.io/specification) + [fiber](https://github.com/gofiber/fiber)
 
@@ -10,12 +10,11 @@ soda := [OpenAPI3.0](https://swagger.io/specification) + [fiber](https://github.
 package main
 
 import (
-	"log"
-
+	"github.com/captain-neo/soda"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
-	"github.com/panicneo/soda"
 )
 
 type ExampleRequestBody struct {
@@ -28,52 +27,45 @@ type ExampleRequestBody struct {
 }
 
 type ExampleParameters struct {
-	Limit  int `oai:"in=query,default=10"`
+	Limit  int `oai:",default=10"`
 	Offset int `oai:"in=query,default=1"`
 }
 
 type ExampleResponse struct {
-	Int             int   `json:"int,omitempty"`
-	IntDefault      int   `json:"int_default,omitempty"`
-	IntSlice        []int `json:"int_slice,omitempty"`
-	IntSliceDefault []int
-	String          string   `json:"string,omitempty"`
-	StringSlice     []string `json:"string_slice,omitempty"`
+	Parameters  *ExampleParameters  `json:"parameters"`
+	RequestBody *ExampleRequestBody `json:"request_body"`
 }
 type ErrorResponse struct{}
 
 func exampleHandler(c *fiber.Ctx) error {
-  // get parameter values
+	// get parameter values
 	parameters := c.Locals(soda.KeyParameter).(*ExampleParameters)
-  // get request body values
+	// get request body values
 	body := c.Locals(soda.KeyRequestBody).(*ExampleRequestBody)
-	return nil
+	return c.Status(200).JSON(ExampleResponse{
+		Parameters:  parameters,
+		RequestBody: body,
+	})
 }
 
 func main() {
-	f := fiber.New(fiber.Config{})
-	f.Use(logger.New(), requestid.New())
-	app := soda.NewSodaWithFiber(f, &soda.Info{
-		Title:          "Example Soda APP",
-		Description:    "an example of soda app",
-		TermsOfService: "",
-		Contact: &soda.Contact{
-			Name:  "admin",
-			Email: "admin@example.com",
-		},
-		License: &soda.License{
-			Name: "MIT",
-		},
-		Version: "1.0.0",
-	})
-	app.NewOperation("/path", "POST", exampleHandler).
+	app := soda.New("soda_fiber", "0.1",
+		soda.WithOpenAPISpec("/openapi.json"),
+		soda.WithRapiDoc("/rapidoc"),
+		soda.WithSwagger("/swagger"),
+		soda.WithRedoc("/redoc"),
+		soda.EnableValidateRequest(),
+	)
+	app.Use(logger.New(), requestid.New())
+	app.Get("/monitor", monitor.New()).SetSummary("it's a monitor").OK()
+	app.Post("/path", exampleHandler).
 		SetOperationID("example-handler").
 		SetJSONRequestBody(ExampleResponse{}).
 		SetParameters(ExampleParameters{}).
 		AddJSONResponse(200, ExampleResponse{}).
-		AddJSONResponse(400, ErrorResponse{}).Mount()
+		AddJSONResponse(400, ErrorResponse{}).OK()
 
-	app.App.Listen(":8080")
+	_ = app.App.Listen(":8080")
 }
 ```
 
@@ -82,8 +74,9 @@ check your openapi3 spec file at http://localhost:8080/openapi.json
 and embed openapi3 renderer
 - redocly: http://localhost:8080/redoc
 - swagger: http://localhost:8080/swagger
+- rapidoc: http://localhost:8080/rapidoc
 
 
 ### TODO:
- - [ ] more tests
- - [ ] more example && examples
+ - [ ] add fiber Group support
+ - [ ] tests
