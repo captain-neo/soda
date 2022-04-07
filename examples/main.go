@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/captain-neo/soda"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
