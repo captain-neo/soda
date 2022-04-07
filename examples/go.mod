@@ -1,3 +1,3 @@
-module example
+module examples
 
 go 1.18

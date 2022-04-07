@@ -1,4 +1,4 @@
-module github.com/captain-neo/soda
+module soda
 
 go 1.18
 
