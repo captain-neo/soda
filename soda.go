@@ -4,12 +4,12 @@ import (
 	"context"
 	"log"
 	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/utils"
 )
 
 type Options struct {
@@ -62,8 +62,7 @@ type Soda struct {
 	specOnce     sync.Once
 	oaiGenerator *oaiGenerator
 
-	Options   *Options
-	validator *validator.Validate
+	Options *Options
 	*fiber.App
 }
 
@@ -85,7 +84,7 @@ func (s *Soda) GetOpenAPI() *openapi3.T {
 	return s.oaiGenerator.openapi
 }
 
-func New(title, version string, options ...Option) *Soda {
+func New(title, version string, fconf fiber.Config, options ...Option) *Soda { //nolint
 	opt := &Options{}
 	for _, option := range options {
 		option(opt)
@@ -93,7 +92,7 @@ func New(title, version string, options ...Option) *Soda {
 
 	s := &Soda{
 		oaiGenerator: newGenerator(&openapi3.Info{Title: title, Version: version}),
-		App:          fiber.New(),
+		App:          fiber.New(fconf),
 		Options:      opt,
 	}
 
@@ -149,17 +148,24 @@ func (s *Soda) Post(path string, handlers ...fiber.Handler) *Operation {
 	return s.Handle(path, "POST", handlers...)
 }
 func (s *Soda) Put(path string, handlers ...fiber.Handler) *Operation {
-	return s.Handle(path, "POST", handlers...)
+	return s.Handle(path, "PUT", handlers...)
 }
 func (s *Soda) Patch(path string, handlers ...fiber.Handler) *Operation {
-	return s.Handle(path, "POST", handlers...)
+	return s.Handle(path, "PATCH", handlers...)
 }
 func (s *Soda) Delete(path string, handlers ...fiber.Handler) *Operation {
-	return s.Handle(path, "POST", handlers...)
+	return s.Handle(path, "DELETE", handlers...)
 }
 func (s *Soda) Handle(path, method string, handlers ...fiber.Handler) *Operation {
-	funcName := utils.FunctionName(handlers[len(handlers)-1])
-	return s.newOperation(fixPath(path), method, handlers...).SetSummary(funcName).SetOperationID(funcName)
+	summary := method + " " + path
+	operationID := strings.Builder{}
+	for _, p := range strings.Split(path, "/") {
+		if p != "" {
+			operationID.WriteString(strings.Title(p))
+		}
+	}
+	operationID.WriteString(method)
+	return s.newOperation(fixPath(path), method, handlers...).SetSummary(summary).SetOperationID(operationID.String())
 }
 
 var fixPathReg = regexp.MustCompile("/:([0-9a-zA-Z]+)")

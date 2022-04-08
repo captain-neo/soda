@@ -8,7 +8,6 @@ const (
 
 // parameter props.
 const (
-	PropIn      = "in"
 	PropExplode = "explode"
 	PropStyle   = "style"
 )

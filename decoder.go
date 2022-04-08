@@ -14,6 +14,19 @@ var decoderPool = &sync.Pool{New: func() interface{} {
 	return schema.NewDecoder()
 }}
 
+type parserFunc func(*fiber.Ctx, interface{}) error
+
+var parameterParsers = map[string]parserFunc{
+	"query":  queryParser,
+	"header": headerParser,
+	"path":   pathParser,
+	"cookie": cookieParser,
+}
+
+func queryParser(c *fiber.Ctx, out interface{}) error {
+	return c.QueryParser(out)
+}
+
 func headerParser(c *fiber.Ctx, out interface{}) error {
 	data := make(map[string][]string)
 	c.Request().Header.VisitAll(func(key, val []byte) {

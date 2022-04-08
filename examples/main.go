@@ -19,8 +19,8 @@ type ExampleRequestBody struct {
 }
 
 type ExampleParameters struct {
-	Limit  int `oai:",default=10"`
-	Offset int `oai:"in=query,default=1"`
+	Limit  int `query:"limit" oai:"default=10"`
+	Offset int `query:"offset" oai:"default=1"`
 }
 
 type ExampleResponse struct {

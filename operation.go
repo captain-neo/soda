@@ -2,7 +2,6 @@ package soda
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"reflect"
@@ -11,17 +10,6 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gofiber/fiber/v2"
 )
-
-type Operations map[string]*Operation
-
-func (ops Operations) Get(path, method string) *Operation {
-	key := fmt.Sprintf("%s~~%s", path, method)
-	return ops[key]
-}
-func (ops Operations) Set(path, method string, op *Operation) {
-	key := fmt.Sprintf("%s~~%s", path, method)
-	ops[key] = op
-}
 
 type Operation struct {
 	Operation    *openapi3.Operation
@@ -84,32 +72,16 @@ func (op *Operation) SetDeprecated(deprecated bool) *Operation {
 	return op
 }
 
-func (op *Operation) BindData() fiber.Handler { //nolint
+func (op *Operation) BindData() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// validate parameters
-		if op.TParameters != nil { // nolint
+		if op.TParameters != nil {
 			parameters := reflect.New(op.TParameters).Interface()
-			if op.hasParameter("query") {
-				if err := c.QueryParser(&parameters); err != nil {
+			for _, parser := range op.parameterParsers() {
+				if err := parser(c, parameters); err != nil {
 					return err
 				}
 			}
-			if op.hasParameter("header") {
-				if err := headerParser(c, &parameters); err != nil {
-					return err
-				}
-			}
-			if op.hasParameter("path") {
-				if err := pathParser(c, &parameters); err != nil {
-					return err
-				}
-			}
-			if op.hasParameter("cookie") {
-				if err := cookieParser(c, &parameters); err != nil {
-					return err
-				}
-			}
-
 			if v := op.Soda.Options.Validator; v != nil {
 				if err := v.StructCtx(c.Context(), parameters); err != nil {
 					return err
@@ -141,21 +113,26 @@ func (op *Operation) OK() *Operation {
 	}
 	op.Soda.oaiGenerator.openapi.AddOperation(op.Path, op.Method, op.Operation)
 	if err := op.Soda.oaiGenerator.openapi.Validate(context.TODO()); err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 	op.handlers = append(op.handlers[:len(op.handlers)-1], op.BindData(), op.handlers[len(op.handlers)-1])
 	op.Soda.Add(op.Method, op.Path, op.handlers...)
 	return op
 }
 
-func (op *Operation) hasParameter(typ string) bool {
+func (op *Operation) parameterParsers() []parserFunc {
 	if op.Operation.Parameters == nil {
-		return false
+		return nil
 	}
+	set := make(map[string]struct{})
 	for _, p := range op.Operation.Parameters {
-		if p.Value.In == typ {
-			return true
+		set[p.Value.In] = struct{}{}
+	}
+	funcs := make([]parserFunc, 0, len(set))
+	for k := range set {
+		if fn, ok := parameterParsers[k]; ok {
+			funcs = append(funcs, fn)
 		}
 	}
-	return false
+	return funcs
 }

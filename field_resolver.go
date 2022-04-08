@@ -63,10 +63,11 @@ func (s fieldResolver) required() bool {
 }
 
 func (s fieldResolver) name() string {
-	for _, t := range []string{"json", "query", "header", "path"} {
-		if name := s.f.Tag.Get(t); name != "" {
-			return strings.Split(name, ",")[0]
-		}
+	if s.f.Name != "" {
+		return s.f.Name
+	}
+	if name := s.f.Tag.Get("json"); name != "" {
+		return strings.Split(name, ",")[0]
 	}
 	return s.f.Name
 }

@@ -3,6 +3,9 @@ package soda
 import (
 	"strconv"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func parseStringSlice(val string) interface{} {
@@ -74,5 +77,9 @@ func toFloat(v string) float64 {
 
 func toCamelCase(str string) string {
 	kebab := strings.ReplaceAll(str, "-", " ")
-	return strings.ReplaceAll(strings.Title(kebab), " ", "")
+	return strings.ReplaceAll(cases.Title(language.English).String(kebab), " ", "")
+}
+
+func summary2operationID(summary string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(summary, " ", "-"), "/", "-")
 }
