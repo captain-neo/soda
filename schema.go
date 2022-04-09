@@ -31,8 +31,8 @@ func (g *oaiGenerator) getSchemaName(rf reflect.Type) string {
 	return strings.ReplaceAll(rf.String(), ".", "")
 }
 
-func (g *oaiGenerator) getSchemaRef(rf reflect.Type) *openapi3.SchemaRef {
-	ref, _ := g.getSchema(nil, rf)
+func (g *oaiGenerator) getSchemaRef(rf reflect.Type, typ string) *openapi3.SchemaRef {
+	ref, _ := g.genSchema(nil, rf, typ)
 	schemaName := g.getSchemaName(rf)
 	g.openapi.Components.Schemas[schemaName] = ref
 	return openapi3.NewSchemaRef(fmt.Sprintf("#/components/schemas/%s", schemaName), ref.Value)
@@ -62,7 +62,7 @@ func (g *oaiGenerator) generateCycleSchemaRef(t reflect.Type, schema *openapi3.S
 	return openapi3.NewSchemaRef(fmt.Sprintf("#/components/schemas/%s", typeName), schema)
 }
 
-func (g *oaiGenerator) getSchema(parents []reflect.Type, t reflect.Type) (*openapi3.SchemaRef, bool) { //nolint
+func (g *oaiGenerator) genSchema(parents []reflect.Type, t reflect.Type, nameTag string) (*openapi3.SchemaRef, bool) { //nolint
 	for t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
@@ -99,7 +99,7 @@ func (g *oaiGenerator) getSchema(parents []reflect.Type, t reflect.Type) (*opena
 					break
 				}
 				if field.shouldEmbed() {
-					if ref, cycle := g.getSchema(parents, f.Type); cycle {
+					if ref, cycle := g.genSchema(parents, f.Type, nameTag); cycle {
 						fieldSchemaRef = g.generateCycleSchemaRef(f.Type, schema)
 					} else {
 						fieldSchemaRef = ref
@@ -109,13 +109,13 @@ func (g *oaiGenerator) getSchema(parents []reflect.Type, t reflect.Type) (*opena
 					}
 					continue
 				}
-				if ref, cycle := g.getSchema(parents, f.Type); cycle {
+				if ref, cycle := g.genSchema(parents, f.Type, nameTag); cycle {
 					fieldSchemaRef = g.generateCycleSchemaRef(f.Type, schema)
 				} else {
 					fieldSchemaRef = ref
 				}
 
-				field.reflectSchemas(fieldSchemaRef.Value)
+				field.injectOAITags(fieldSchemaRef.Value)
 				if fieldSchemaRef.Value.Nullable {
 					nullSchema := openapi3.NewSchema()
 					nullSchema.Type = "null"
@@ -126,9 +126,9 @@ func (g *oaiGenerator) getSchema(parents []reflect.Type, t reflect.Type) (*opena
 						},
 					}
 				}
-				schema.Properties[field.name()] = fieldSchemaRef
+				schema.Properties[field.name(nameTag)] = fieldSchemaRef
 				if field.required() {
-					schema.Required = append(schema.Required, field.name())
+					schema.Required = append(schema.Required, field.name(nameTag))
 				}
 			}
 
@@ -136,7 +136,7 @@ func (g *oaiGenerator) getSchema(parents []reflect.Type, t reflect.Type) (*opena
 		}
 	case reflect.Map:
 		schema := openapi3.NewObjectSchema()
-		additionalProperties, cycle := g.getSchema(parents, t.Elem())
+		additionalProperties, cycle := g.genSchema(parents, t.Elem(), nameTag)
 		if cycle {
 			additionalProperties = g.generateCycleSchemaRef(t.Elem(), schema)
 		}
@@ -155,7 +155,7 @@ func (g *oaiGenerator) getSchema(parents []reflect.Type, t reflect.Type) (*opena
 			schema.MinItems = uint64(t.Len())
 			schema.MaxItems = &schema.MinItems
 		}
-		if ref, cycle := g.getSchema(parents, t.Elem()); cycle {
+		if ref, cycle := g.genSchema(parents, t.Elem(), nameTag); cycle {
 			schema.Items = g.generateCycleSchemaRef(t.Elem(), schema)
 		} else {
 			schema.Items = ref
@@ -163,7 +163,7 @@ func (g *oaiGenerator) getSchema(parents []reflect.Type, t reflect.Type) (*opena
 		return schema.NewRef(), false
 
 	case reflect.Interface:
-		return openapi3.NewBytesSchema().WithAnyAdditionalProperties().NewRef(), false
+		return openapi3.NewSchema().WithAnyAdditionalProperties().NewRef(), false
 	case reflect.Int:
 		return openapi3.NewIntegerSchema().NewRef(), false
 	case reflect.Uint:

@@ -80,7 +80,7 @@ func (s *Soda) GetOpenAPIJSON() []byte {
 	return s.spec
 }
 
-func (s *Soda) GetOpenAPI() *openapi3.T {
+func (s *Soda) OpenAPI() *openapi3.T {
 	return s.oaiGenerator.openapi
 }
 
@@ -161,7 +161,7 @@ func (s *Soda) Handle(path, method string, handlers ...fiber.Handler) *Operation
 	operationID := strings.Builder{}
 	for _, p := range strings.Split(path, "/") {
 		if p != "" {
-			operationID.WriteString(strings.Title(p))
+			operationID.WriteString(strings.ToTitle(p))
 		}
 	}
 	operationID.WriteString(method)

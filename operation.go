@@ -54,7 +54,7 @@ func (op *Operation) AddJSONResponse(status int, model interface{}) *Operation {
 		op.Operation.Responses = make(openapi3.Responses)
 	}
 	if model != nil {
-		ref := op.Soda.oaiGenerator.GenerateResponse(op.Operation.OperationID, status, reflect.TypeOf(model))
+		ref := op.Soda.oaiGenerator.GenerateResponse(op.Operation.OperationID, status, reflect.TypeOf(model), "json")
 		op.Operation.Responses[strconv.Itoa(status)] = ref
 	} else {
 		op.Operation.AddResponse(status, openapi3.NewResponse().WithDescription(http.StatusText(status)))

@@ -39,15 +39,15 @@ func newFieldResolver(f *reflect.StructField) *fieldResolver {
 	return resolver
 }
 
-func (s *fieldResolver) reflectSchemas(schema *openapi3.Schema) {
-	s.resolveGeneric(schema)
+func (s *fieldResolver) injectOAITags(schema *openapi3.Schema) {
+	s.injectOAIGeneric(schema)
 	switch schema.Type {
 	case TypeString:
-		s.resolveString(schema)
+		s.injectOAIString(schema)
 	case TypeNumber, TypeInteger:
-		s.resolveNumeric(schema)
+		s.injectOAINumeric(schema)
 	case TypeArray:
-		s.resolveArray(schema)
+		s.injectOAIArray(schema)
 	}
 }
 
@@ -62,12 +62,11 @@ func (s fieldResolver) required() bool {
 	return required
 }
 
-func (s fieldResolver) name() string {
-	if s.f.Name != "" {
-		return s.f.Name
-	}
-	if name := s.f.Tag.Get("json"); name != "" {
-		return strings.Split(name, ",")[0]
+func (s fieldResolver) name(tag ...string) string {
+	if len(tag) > 0 {
+		if name := s.f.Tag.Get(tag[0]); name != "" {
+			return strings.Split(name, ",")[0]
+		}
 	}
 	return s.f.Name
 }
@@ -76,7 +75,7 @@ func (s fieldResolver) shouldEmbed() bool {
 	return s.f.Anonymous && !s.ignored
 }
 
-func (s *fieldResolver) resolveGeneric(schema *openapi3.Schema) {
+func (s *fieldResolver) injectOAIGeneric(schema *openapi3.Schema) {
 	for tag, val := range s.tagPairs {
 		switch tag {
 		case PropTitle:
@@ -100,7 +99,7 @@ func (s *fieldResolver) resolveGeneric(schema *openapi3.Schema) {
 }
 
 // read struct tags for string type keywords.
-func (s *fieldResolver) resolveString(schema *openapi3.Schema) {
+func (s *fieldResolver) injectOAIString(schema *openapi3.Schema) {
 	for tag, val := range s.tagPairs {
 		switch tag {
 		case PropMinLength:
@@ -127,7 +126,7 @@ func (s *fieldResolver) resolveString(schema *openapi3.Schema) {
 }
 
 // read struct tags for numeric type keywords.
-func (s *fieldResolver) resolveNumeric(schema *openapi3.Schema) { //nolint
+func (s *fieldResolver) injectOAINumeric(schema *openapi3.Schema) { //nolint
 	for tag, val := range s.tagPairs {
 		switch tag {
 		case PropMultipleOf:
@@ -171,7 +170,7 @@ func (s *fieldResolver) resolveNumeric(schema *openapi3.Schema) { //nolint
 }
 
 // read struct tags for array type keywords.
-func (s *fieldResolver) resolveArray(schema *openapi3.Schema) {
+func (s *fieldResolver) injectOAIArray(schema *openapi3.Schema) {
 	for tag, val := range s.tagPairs {
 		switch tag {
 		case PropMinItems:

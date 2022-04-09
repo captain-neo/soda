@@ -29,7 +29,7 @@ func newGenerator(info *openapi3.Info) *oaiGenerator {
 }
 
 func (g *oaiGenerator) GenerateJSONRequestBody(operationID string, model reflect.Type) *openapi3.RequestBodyRef {
-	schema := g.getSchemaRef(model)
+	schema := g.getSchemaRef(model, "json")
 	requestBody := openapi3.NewRequestBody().WithJSONSchemaRef(schema).WithRequired(true)
 	requestName := toCamelCase(operationID)
 
@@ -43,8 +43,8 @@ func (g *oaiGenerator) GenerateJSONRequestBody(operationID string, model reflect
 	}
 }
 
-func (g *oaiGenerator) GenerateResponse(operationID string, status int, model reflect.Type) *openapi3.ResponseRef {
-	ref := g.getSchemaRef(model)
+func (g *oaiGenerator) GenerateResponse(operationID string, status int, model reflect.Type, typ string) *openapi3.ResponseRef {
+	ref := g.getSchemaRef(model, typ)
 	responseName := fmt.Sprintf("%s%s", toCamelCase(operationID), strings.ReplaceAll(http.StatusText(status), " ", ""))
 	response := openapi3.NewResponse().WithJSONSchemaRef(ref).WithDescription(http.StatusText(status))
 
@@ -66,6 +66,13 @@ func (g *oaiGenerator) generateParameters(parameters *openapi3.Parameters, t ref
 	}
 
 	handleField := func(f *reflect.StructField) {
+		var typ string
+		for _, pos := range []string{openapi3.ParameterInQuery, openapi3.ParameterInHeader, openapi3.ParameterInPath, openapi3.ParameterInCookie} {
+			if name := f.Tag.Get(pos); name != "" {
+				typ = pos
+				break
+			}
+		}
 		field := newFieldResolver(f)
 		if field.shouldEmbed() {
 			g.generateParameters(parameters, f.Type)
@@ -74,8 +81,11 @@ func (g *oaiGenerator) generateParameters(parameters *openapi3.Parameters, t ref
 		if field.ignored {
 			return
 		}
-		fieldSchema, _ := g.getSchema(nil, f.Type)
-		field.reflectSchemas(fieldSchema.Value)
+		if typ == "" {
+			panic(fmt.Sprintf("field %q's parameter type is unknown", f.Name))
+		}
+		fieldSchema, _ := g.genSchema(nil, f.Type, typ)
+		field.injectOAITags(fieldSchema.Value)
 		param := &openapi3.Parameter{
 			Required:    field.required(),
 			Description: fieldSchema.Value.Description,
@@ -83,21 +93,8 @@ func (g *oaiGenerator) generateParameters(parameters *openapi3.Parameters, t ref
 			Deprecated:  fieldSchema.Value.Deprecated,
 			Schema:      fieldSchema.Value.NewRef(),
 		}
-		if name := field.f.Tag.Get(openapi3.ParameterInQuery); name != "" {
-			param.Name = strings.Split(name, ",")[0]
-			param.In = openapi3.ParameterInQuery
-		} else if name := field.f.Tag.Get(openapi3.ParameterInPath); name != "" {
-			param.Name = strings.Split(name, ",")[0]
-			param.In = openapi3.ParameterInPath
-		} else if name := field.f.Tag.Get(openapi3.ParameterInHeader); name != "" {
-			param.Name = strings.Split(name, ",")[0]
-			param.In = openapi3.ParameterInHeader
-		} else if name := field.f.Tag.Get(openapi3.ParameterInCookie); name != "" {
-			param.Name = strings.Split(name, ",")[0]
-			param.In = openapi3.ParameterInCookie
-		} else {
-			panic(fmt.Sprintf("field %q's parameter type is unknown", field.name()))
-		}
+		param.In = typ
+		param.Name = field.name(typ)
 
 		if v, ok := field.tagPairs[PropExplode]; ok {
 			param.Explode = openapi3.BoolPtr(toBool(v))

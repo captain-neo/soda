@@ -11,7 +11,9 @@ import (
 )
 
 var decoderPool = &sync.Pool{New: func() interface{} {
-	return schema.NewDecoder()
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+	return decoder
 }}
 
 type parserFunc func(*fiber.Ctx, interface{}) error
@@ -33,7 +35,7 @@ func headerParser(c *fiber.Ctx, out interface{}) error {
 		k := utils.UnsafeString(key)
 		v := utils.UnsafeString(val)
 
-		if strings.Contains(v, ",") && equalFieldType(out, reflect.Slice, k) {
+		if strings.Contains(v, ",") && equalFieldType("header", out, reflect.Slice, k) {
 			values := strings.Split(v, ",")
 			for i := 0; i < len(values); i++ {
 				data[k] = append(data[k], values[i])
@@ -59,7 +61,7 @@ func cookieParser(c *fiber.Ctx, out interface{}) error {
 	c.Request().Header.VisitAllCookie(func(key, val []byte) {
 		k := utils.UnsafeString(key)
 		v := utils.UnsafeString(val)
-		if strings.Contains(v, ",") && equalFieldType(out, reflect.Slice, k) {
+		if strings.Contains(v, ",") && equalFieldType("cookie", out, reflect.Slice, k) {
 			values := strings.Split(v, ",")
 			for i := 0; i < len(values); i++ {
 				data[k] = append(data[k], values[i])
@@ -78,11 +80,10 @@ func parseToStruct(aliasTag string, out interface{}, data map[string][]string) e
 
 	// Set alias tag
 	schemaDecoder.SetAliasTag(aliasTag)
-
 	return schemaDecoder.Decode(out, data)
 }
 
-func equalFieldType(out interface{}, kind reflect.Kind, key string) bool {
+func equalFieldType(tagName string, out interface{}, kind reflect.Kind, key string) bool {
 	// Get type of interface
 	outTyp := reflect.TypeOf(out).Elem()
 	key = utils.ToLower(key)
@@ -109,7 +110,7 @@ func equalFieldType(out interface{}, kind reflect.Kind, key string) bool {
 			continue
 		}
 		// Get tag from field if exist
-		inputFieldName := typeField.Tag.Get("query")
+		inputFieldName := typeField.Tag.Get(tagName)
 		if inputFieldName == "" {
 			inputFieldName = typeField.Name
 		} else {
