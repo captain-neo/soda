@@ -13,35 +13,42 @@ import (
 )
 
 type Options struct {
-	SwaggerPath         *string
-	RapiDocPath         *string
-	RedocPath           *string
-	OpenAPISpecJSONPath *string
-	Validator           *validator.Validate
+	swaggerPath         *string
+	rapiDocPath         *string
+	redocPath           *string
+	openAPISpecJSONPath *string
+	fiberConfig         []fiber.Config
+	validator           *validator.Validate
 }
 type Option func(o *Options)
 
 func WithOpenAPISpec(path string) Option {
 	return func(o *Options) {
-		o.OpenAPISpecJSONPath = &path
+		o.openAPISpecJSONPath = &path
 	}
 }
 
 func WithSwagger(path string) Option {
 	return func(o *Options) {
-		o.SwaggerPath = &path
+		o.swaggerPath = &path
 	}
 }
 
 func WithRedoc(path string) Option {
 	return func(o *Options) {
-		o.RedocPath = &path
+		o.redocPath = &path
 	}
 }
 
 func WithRapiDoc(path string) Option {
 	return func(o *Options) {
-		o.RapiDocPath = &path
+		o.rapiDocPath = &path
+	}
+}
+
+func WithFiberConfig(config ...fiber.Config) Option {
+	return func(o *Options) {
+		o.fiberConfig = config
 	}
 }
 
@@ -53,7 +60,7 @@ func EnableValidateRequest(v ...*validator.Validate) Option {
 		validate = v[0]
 	}
 	return func(o *Options) {
-		o.Validator = validate
+		o.validator = validate
 	}
 }
 
@@ -84,7 +91,7 @@ func (s *Soda) OpenAPI() *openapi3.T {
 	return s.oaiGenerator.openapi
 }
 
-func New(title, version string, fconf fiber.Config, options ...Option) *Soda { //nolint
+func New(title, version string, options ...Option) *Soda { //nolint
 	opt := &Options{}
 	for _, option := range options {
 		option(opt)
@@ -92,33 +99,33 @@ func New(title, version string, fconf fiber.Config, options ...Option) *Soda { /
 
 	s := &Soda{
 		oaiGenerator: newGenerator(&openapi3.Info{Title: title, Version: version}),
-		App:          fiber.New(fconf),
+		App:          fiber.New(opt.fiberConfig...),
 		Options:      opt,
 	}
 
-	if opt.OpenAPISpecJSONPath != nil {
-		s.App.Get(*opt.OpenAPISpecJSONPath, func(ctx *fiber.Ctx) error {
+	if opt.openAPISpecJSONPath != nil {
+		s.App.Get(*opt.openAPISpecJSONPath, func(ctx *fiber.Ctx) error {
 			ctx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 			return ctx.Send(s.GetOpenAPIJSON())
 		})
 	}
 
-	if opt.RapiDocPath != nil {
-		s.App.Get(*opt.RapiDocPath, func(ctx *fiber.Ctx) error {
+	if opt.rapiDocPath != nil {
+		s.App.Get(*opt.rapiDocPath, func(ctx *fiber.Ctx) error {
 			ctx.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
 			return ctx.SendString(s.RapiDoc())
 		})
 	}
 
-	if opt.SwaggerPath != nil {
-		s.App.Get(*opt.SwaggerPath, func(ctx *fiber.Ctx) error {
+	if opt.swaggerPath != nil {
+		s.App.Get(*opt.swaggerPath, func(ctx *fiber.Ctx) error {
 			ctx.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
 			return ctx.SendString(s.Swagger())
 		})
 	}
 
-	if opt.RedocPath != nil {
-		s.App.Get(*opt.RedocPath, func(ctx *fiber.Ctx) error {
+	if opt.redocPath != nil {
+		s.App.Get(*opt.redocPath, func(ctx *fiber.Ctx) error {
 			ctx.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
 			return ctx.SendString(s.Redoc())
 		})
