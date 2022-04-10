@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"reflect"
+	"regexp"
 	"strconv"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -82,7 +83,7 @@ func (op *Operation) BindData() fiber.Handler {
 					return err
 				}
 			}
-			if v := op.Soda.Options.Validator; v != nil {
+			if v := op.Soda.Options.validator; v != nil {
 				if err := v.StructCtx(c.Context(), parameters); err != nil {
 					return err
 				}
@@ -95,7 +96,7 @@ func (op *Operation) BindData() fiber.Handler {
 			if err := c.BodyParser(&requestBody); err != nil {
 				return err
 			}
-			if v := op.Soda.Options.Validator; v != nil {
+			if v := op.Soda.Options.validator; v != nil {
 				if err := v.StructCtx(c.Context(), requestBody); err != nil {
 					return err
 				}
@@ -107,11 +108,18 @@ func (op *Operation) BindData() fiber.Handler {
 	}
 }
 
+var fixPathReg = regexp.MustCompile("/:([0-9a-zA-Z]+)")
+
+func fixPath(path string) string {
+	return fixPathReg.ReplaceAllString(path, "/{${1}}")
+}
+
 func (op *Operation) OK() *Operation {
 	if err := op.Operation.Validate(context.TODO()); err != nil {
 		log.Fatalln(err)
 	}
-	op.Soda.oaiGenerator.openapi.AddOperation(op.Path, op.Method, op.Operation)
+
+	op.Soda.oaiGenerator.openapi.AddOperation(fixPath(op.Path), op.Method, op.Operation)
 	if err := op.Soda.oaiGenerator.openapi.Validate(context.TODO()); err != nil {
 		log.Fatalln(err)
 	}

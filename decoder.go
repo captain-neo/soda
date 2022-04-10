@@ -35,7 +35,7 @@ func headerParser(c *fiber.Ctx, out interface{}) error {
 		k := utils.UnsafeString(key)
 		v := utils.UnsafeString(val)
 
-		if strings.Contains(v, ",") && equalFieldType("header", out, reflect.Slice, k) {
+		if strings.Contains(v, ",") && equalSliceField("header", out, k) {
 			values := strings.Split(v, ",")
 			for i := 0; i < len(values); i++ {
 				data[k] = append(data[k], values[i])
@@ -61,7 +61,7 @@ func cookieParser(c *fiber.Ctx, out interface{}) error {
 	c.Request().Header.VisitAllCookie(func(key, val []byte) {
 		k := utils.UnsafeString(key)
 		v := utils.UnsafeString(val)
-		if strings.Contains(v, ",") && equalFieldType("cookie", out, reflect.Slice, k) {
+		if strings.Contains(v, ",") && equalSliceField("cookie", out, k) {
 			values := strings.Split(v, ",")
 			for i := 0; i < len(values); i++ {
 				data[k] = append(data[k], values[i])
@@ -83,7 +83,7 @@ func parseToStruct(aliasTag string, out interface{}, data map[string][]string) e
 	return schemaDecoder.Decode(out, data)
 }
 
-func equalFieldType(tagName string, out interface{}, kind reflect.Kind, key string) bool {
+func equalSliceField(tagName string, out interface{}, key string) bool {
 	// Get type of interface
 	outTyp := reflect.TypeOf(out).Elem()
 	key = utils.ToLower(key)
@@ -101,14 +101,12 @@ func equalFieldType(tagName string, out interface{}, kind reflect.Kind, key stri
 		if !structField.CanSet() {
 			continue
 		}
-		// Get field key data
-		typeField := outTyp.Field(i)
-		// Get type of field key
-		structFieldKind := structField.Kind()
 		// Does the field type equals input?
-		if structFieldKind != kind {
+		if structField.Kind() != reflect.Slice {
 			continue
 		}
+		// Get field key data
+		typeField := outTyp.Field(i)
 		// Get tag from field if exist
 		inputFieldName := typeField.Tag.Get(tagName)
 		if inputFieldName == "" {

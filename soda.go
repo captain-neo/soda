@@ -3,13 +3,14 @@ package soda
 import (
 	"context"
 	"log"
-	"regexp"
 	"strings"
 	"sync"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type Options struct {
@@ -91,7 +92,7 @@ func (s *Soda) OpenAPI() *openapi3.T {
 	return s.oaiGenerator.openapi
 }
 
-func New(title, version string, options ...Option) *Soda { //nolint
+func New(title, version string, options ...Option) *Soda {
 	opt := &Options{}
 	for _, option := range options {
 		option(opt)
@@ -165,18 +166,13 @@ func (s *Soda) Delete(path string, handlers ...fiber.Handler) *Operation {
 }
 func (s *Soda) Handle(path, method string, handlers ...fiber.Handler) *Operation {
 	summary := method + " " + path
-	operationID := strings.Builder{}
+	idBuilder := strings.Builder{}
 	for _, p := range strings.Split(path, "/") {
 		if p != "" {
-			operationID.WriteString(strings.ToTitle(p))
+			idBuilder.WriteString(cases.Title(language.English).String(p))
 		}
 	}
-	operationID.WriteString(method)
-	return s.newOperation(fixPath(path), method, handlers...).SetSummary(summary).SetOperationID(operationID.String())
-}
-
-var fixPathReg = regexp.MustCompile("/:([0-9a-zA-Z]+)")
-
-func fixPath(path string) string {
-	return fixPathReg.ReplaceAllString(path, "/{${1}}")
+	idBuilder.WriteString(method)
+	id := strings.ReplaceAll(idBuilder.String(), ":", "")
+	return s.newOperation(path, method, handlers...).SetSummary(summary).SetOperationID(id)
 }
