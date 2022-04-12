@@ -82,7 +82,7 @@ func (s *Soda) RapiDoc() string {
     <script type="module" src="https://cdn.jsdelivr.net/npm/rapidoc/dist/rapidoc-min.min.js"></script>
   </head>
   <body>
-    <rapi-doc id="thedoc" theme="light" render-style="focused" show-header="false" show-components="true" allow-try="true"
+    <rapi-doc id="thedoc" theme="light" show-header="true" show-components="true" allow-try="true"
       allow-authentication="true" regular-font="Open Sans" mono-font="Roboto Mono" font-size="large"
       schema-description-expanded="true">
     </rapi-doc>
