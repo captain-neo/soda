@@ -18,17 +18,20 @@ import (
 )
 
 type ExampleRequestBody struct {
-	Int             int   `json:"int,omitempty"`
-	IntDefault      int   `json:"int_default,omitempty"`
-	IntSlice        []int `json:"int_slice,omitempty"`
-	IntSliceDefault []int
+	Int             int       `json:"int"`
 	String          string
 	StringSlice     []string
 }
 
+type Auth struct {
+  Token string `header:"Authorization" oai:"description=some JWT Token"`
+}
+
 type ExampleParameters struct {
-	Limit  int `oai:",default=10"`
-	Offset int `oai:"in=query,default=1"`
+  Auth
+	Limit  int      `query:"limit" oai:"description=blabla"`
+	Offset int      `query:"offset"`
+  Q      []string `query:"q" oai:"description=support list parameters"`
 }
 
 type ExampleResponse struct {
@@ -39,9 +42,11 @@ type ErrorResponse struct{}
 
 func exampleHandler(c *fiber.Ctx) error {
 	// get parameter values
-	parameters := c.Locals(soda.KeyParameter).(*ExampleParameters)
+	params := c.Locals(soda.KeyParameter).(*ExampleParameters)
+  fmt.Println(params.Authorization, params.Limit, params.Offset, params.Q)
 	// get request body values
 	body := c.Locals(soda.KeyRequestBody).(*ExampleRequestBody)
+  fmt.Println(body.Int)
 	return c.Status(200).JSON(ExampleResponse{
 		Parameters:  parameters,
 		RequestBody: body,
@@ -78,5 +83,5 @@ and embed openapi3 renderer
 
 
 ### TODO:
- - [ ] add fiber Group support
- - [ ] tests
+ - [ ] need add more examples to cover all the features
+ - [ ] support app.Group() or app.Use() maybe? need design
