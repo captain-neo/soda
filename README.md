@@ -10,6 +10,8 @@ soda := [OpenAPI3.0](https://swagger.io/specification) + [fiber](https://github.
 package main
 
 import (
+	"fmt"
+
 	"github.com/captain-neo/soda"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -18,20 +20,20 @@ import (
 )
 
 type ExampleRequestBody struct {
-	Int             int       `json:"int"`
-	String          string
-	StringSlice     []string
+	String      string
+	StringSlice []string
+	Int         int `json:"int"`
 }
 
 type Auth struct {
-  Token string `header:"Authorization" oai:"description=some JWT Token"`
+	Token string `header:"Authorization" oai:"description=some JWT Token"`
 }
 
 type ExampleParameters struct {
-  Auth
+	Auth
+	Q      []string `query:"q" oai:"description=support list parameters"`
 	Limit  int      `query:"limit" oai:"description=blabla"`
 	Offset int      `query:"offset"`
-  Q      []string `query:"q" oai:"description=support list parameters"`
 }
 
 type ExampleResponse struct {
@@ -43,12 +45,12 @@ type ErrorResponse struct{}
 func exampleHandler(c *fiber.Ctx) error {
 	// get parameter values
 	params := c.Locals(soda.KeyParameter).(*ExampleParameters)
-  fmt.Println(params.Authorization, params.Limit, params.Offset, params.Q)
+	fmt.Println(params.Token, params.Limit, params.Offset, params.Q)
 	// get request body values
 	body := c.Locals(soda.KeyRequestBody).(*ExampleRequestBody)
-  fmt.Println(body.Int)
+	fmt.Println(body.Int)
 	return c.Status(200).JSON(ExampleResponse{
-		Parameters:  parameters,
+		Parameters:  params,
 		RequestBody: body,
 	})
 }
@@ -70,7 +72,7 @@ func main() {
 		AddJSONResponse(200, ExampleResponse{}).
 		AddJSONResponse(400, ErrorResponse{}).OK()
 
-	_ = app.App.Listen(":8080")
+	_ = app.Listen(":8080")
 }
 ```
 

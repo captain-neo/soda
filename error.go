@@ -46,12 +46,11 @@ const (
 
 // ParseError describes errors which happens while parse operation's parameters, requestBody, or response.
 type ParseError struct {
-	Kind   ParseErrorKind
 	Value  interface{}
-	Reason string
 	Cause  error
-
-	path []interface{}
+	Reason string
+	path   []interface{}
+	Kind   ParseErrorKind
 }
 
 func (e *ParseError) Error() string {

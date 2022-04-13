@@ -9,8 +9,8 @@ import (
 
 type fieldResolver struct {
 	f        *reflect.StructField
-	ignored  bool
 	tagPairs map[string]string
+	ignored  bool
 }
 
 func newFieldResolver(f *reflect.StructField) *fieldResolver {
@@ -52,10 +52,8 @@ func (s *fieldResolver) injectOAITags(schema *openapi3.Schema) {
 }
 
 func (s fieldResolver) required() bool {
-	required := true
-	if s.f.Type.Kind() == reflect.Ptr {
-		required = false
-	}
+	required := s.f.Type.Kind() != reflect.Ptr
+
 	if v, ok := s.tagPairs[PropRequired]; ok {
 		required = toBool(v)
 	}

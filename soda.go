@@ -18,8 +18,8 @@ type Options struct {
 	rapiDocPath         *string
 	redocPath           *string
 	openAPISpecJSONPath *string
-	fiberConfig         []fiber.Config
 	validator           *validator.Validate
+	fiberConfig         []fiber.Config
 }
 type Option func(o *Options)
 
@@ -66,12 +66,11 @@ func EnableValidateRequest(v ...*validator.Validate) Option {
 }
 
 type Soda struct {
-	spec         []byte
 	specOnce     sync.Once
 	oaiGenerator *oaiGenerator
-
-	Options *Options
+	Options      *Options
 	*fiber.App
+	spec []byte
 }
 
 func (s *Soda) GetOpenAPIJSON() []byte {
