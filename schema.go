@@ -2,7 +2,6 @@ package soda
 
 import (
 	"encoding/json"
-	"fmt"
 	"math"
 	"net"
 	"net/url"
@@ -28,38 +27,39 @@ type getOAISchema interface {
 var getOAISchemaFunc = reflect.TypeOf((*getOAISchema)(nil)).Elem()
 
 func (g *oaiGenerator) getSchemaName(rf reflect.Type) string {
-	return strings.ReplaceAll(rf.String(), ".", "")
+	for rf.Kind() == reflect.Ptr {
+		rf = rf.Elem()
+	}
+	name := rf.String()
+	return strings.ReplaceAll(name, ".", "")
 }
 
 func (g *oaiGenerator) getSchemaRef(rf reflect.Type, typ string) *openapi3.SchemaRef {
 	ref, _ := g.genSchema(nil, rf, typ)
 	schemaName := g.getSchemaName(rf)
 	g.openapi.Components.Schemas[schemaName] = ref
-	return openapi3.NewSchemaRef(fmt.Sprintf("#/components/schemas/%s", schemaName), ref.Value)
+	return openapi3.NewSchemaRef("#/components/schemas/"+schemaName, ref.Value)
 }
 
 func (g *oaiGenerator) generateCycleSchemaRef(t reflect.Type, schema *openapi3.Schema) *openapi3.SchemaRef {
-	var typeName string
 	switch t.Kind() {
 	case reflect.Ptr:
 		return g.generateCycleSchemaRef(t.Elem(), schema)
 	case reflect.Slice:
 		ref := g.generateCycleSchemaRef(t.Elem(), schema)
-		sliceSchema := openapi3.NewSchema()
-		sliceSchema.Type = TypeArray
+		g.openapi.Components.Schemas[g.getSchemaName(t.Elem())] = openapi3.NewSchemaRef("", ref.Value)
+		sliceSchema := openapi3.NewArraySchema()
 		sliceSchema.Items = ref
 		return openapi3.NewSchemaRef("", sliceSchema)
 	case reflect.Map:
 		ref := g.generateCycleSchemaRef(t.Elem(), schema)
-		mapSchema := openapi3.NewSchema()
-		mapSchema.Type = TypeObject
+		g.openapi.Components.Schemas[g.getSchemaName(t.Elem())] = openapi3.NewSchemaRef("", ref.Value)
+		mapSchema := openapi3.NewObjectSchema()
 		mapSchema.AdditionalProperties = ref
 		return openapi3.NewSchemaRef("", mapSchema)
-	default:
-		typeName = g.getSchemaName(t)
 	}
 
-	return openapi3.NewSchemaRef(fmt.Sprintf("#/components/schemas/%s", typeName), schema)
+	return openapi3.NewSchemaRef("#/components/schemas/"+g.getSchemaName(t), schema)
 }
 
 func (g *oaiGenerator) genSchema(parents []reflect.Type, t reflect.Type, nameTag string) (*openapi3.SchemaRef, bool) { //nolint
