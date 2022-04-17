@@ -48,6 +48,8 @@ func (s *fieldResolver) injectOAITags(schema *openapi3.Schema) {
 		s.injectOAINumeric(schema)
 	case TypeArray:
 		s.injectOAIArray(schema)
+	case TypeBoolean:
+		s.injectOAIBoolean(schema)
 	}
 }
 
@@ -150,6 +152,8 @@ func (s *fieldResolver) injectOAINumeric(schema *openapi3.Schema) { //nolint
 				schema.Example = toInt(val)
 			case TypeNumber:
 				schema.Example = toFloat(val)
+			case TypeBoolean:
+				schema.Example = toBool(val)
 			}
 		case PropEnum:
 			items := strings.Split(val, SeparatorPropItem)
@@ -197,5 +201,15 @@ func (s *fieldResolver) injectOAIArray(schema *openapi3.Schema) {
 				schema.Enum = []interface{}{items}
 			}
 		}
+	}
+}
+
+// read struct tags for bool type keywords.
+func (s *fieldResolver) injectOAIBoolean(schema *openapi3.Schema) {
+	if val, ok := s.tagPairs[PropDefault]; ok {
+		schema.Default = toBool(val)
+	}
+	if val, ok := s.tagPairs[PropExample]; ok {
+		schema.Example = toBool(val)
 	}
 }
