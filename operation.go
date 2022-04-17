@@ -108,7 +108,7 @@ func (op *Operation) BindData() fiber.Handler {
 	}
 }
 
-var fixPathReg = regexp.MustCompile("/:([0-9a-zA-Z]+)")
+var fixPathReg = regexp.MustCompile("/:([0-9a-zA-Z_]+)")
 
 func fixPath(path string) string {
 	return fixPathReg.ReplaceAllString(path, "/{${1}}")
