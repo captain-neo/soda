@@ -83,7 +83,7 @@ func (op *Operation) BindData() fiber.Handler {
 					return err
 				}
 			}
-			if v := op.Soda.Options.validator; v != nil {
+			if v := op.Soda.Options.validator; v != nil && op.TParameters.Kind() == reflect.Struct {
 				if err := v.StructCtx(c.Context(), parameters); err != nil {
 					return err
 				}
@@ -96,7 +96,7 @@ func (op *Operation) BindData() fiber.Handler {
 			if err := c.BodyParser(&requestBody); err != nil {
 				return err
 			}
-			if v := op.Soda.Options.validator; v != nil {
+			if v := op.Soda.Options.validator; v != nil && op.TRequestBody.Kind() == reflect.Struct {
 				if err := v.StructCtx(c.Context(), requestBody); err != nil {
 					return err
 				}
