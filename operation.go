@@ -63,6 +63,15 @@ func (op *Operation) AddJSONResponse(status int, model interface{}) *Operation {
 	return op
 }
 
+func (op *Operation) AddResponseWithContentType(status int, contentType string) *Operation {
+	if len(op.Operation.Responses) == 0 {
+		op.Operation.Responses = make(openapi3.Responses)
+	}
+	ct := openapi3.NewContentWithSchema(openapi3.NewSchema(), []string{contentType})
+	op.Operation.AddResponse(status, openapi3.NewResponse().WithContent(ct).WithDescription(http.StatusText(status)))
+	return op
+}
+
 func (op *Operation) AddTags(tags ...string) *Operation {
 	op.Operation.Tags = append(op.Operation.Tags, tags...)
 	return op
