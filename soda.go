@@ -104,31 +104,50 @@ func New(title, version string, options ...Option) *Soda {
 	}
 
 	if opt.openAPISpecJSONPath != nil {
-		s.App.Get(*opt.openAPISpecJSONPath, func(ctx *fiber.Ctx) error {
+		s.Get(*opt.openAPISpecJSONPath, func(ctx *fiber.Ctx) error {
 			ctx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 			return ctx.Send(s.GetOpenAPIJSON())
-		})
-	}
-
-	if opt.rapiDocPath != nil {
-		s.App.Get(*opt.rapiDocPath, func(ctx *fiber.Ctx) error {
-			ctx.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
-			return ctx.SendString(s.RapiDoc())
-		})
-	}
-
-	if opt.swaggerPath != nil {
-		s.App.Get(*opt.swaggerPath, func(ctx *fiber.Ctx) error {
-			ctx.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
-			return ctx.SendString(s.Swagger())
-		})
+		}).
+			AddTags("Documentation").
+			SetSummary("OpenAPI Specification").
+			SetDescription(`[OpenAPI3](https://swagger.io/specification) OpenAPI Specification File Download`).
+			AddResponseWithContentType(200, fiber.MIMEApplicationJSONCharsetUTF8).
+			OK()
 	}
 
 	if opt.redocPath != nil {
-		s.App.Get(*opt.redocPath, func(ctx *fiber.Ctx) error {
+		s.Get(*opt.redocPath, func(ctx *fiber.Ctx) error {
 			ctx.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
 			return ctx.SendString(s.Redoc())
-		})
+		}).
+			AddTags("Documentation").
+			SetSummary("redoc").
+			SetDescription(`[Redoc](https://github.com/Redocly/redoc) OpenAPI Renderer`).
+			AddResponseWithContentType(200, fiber.MIMETextHTMLCharsetUTF8).
+			OK()
+	}
+
+	if opt.swaggerPath != nil {
+		s.Get(*opt.swaggerPath, func(ctx *fiber.Ctx) error {
+			ctx.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+			return ctx.SendString(s.Swagger())
+		}).
+			AddTags("Documentation").
+			SetSummary("swagger").
+			SetDescription(`[Swagger UI](https://swagger.io/tools/swagger-ui/) OpenAPI Renderer`).
+			AddResponseWithContentType(200, fiber.MIMETextHTMLCharsetUTF8).
+			OK()
+	}
+
+	if opt.rapiDocPath != nil {
+		s.Get(*opt.rapiDocPath, func(ctx *fiber.Ctx) error {
+			ctx.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+			return ctx.SendString(s.RapiDoc())
+		}).AddTags("Documentation").
+			SetSummary("rapidoc").
+			SetDescription(`[RapiDoc](https://github.com/mrin9/RapiDoc) OpenAPI Renderer`).
+			AddResponseWithContentType(200, fiber.MIMETextHTMLCharsetUTF8).
+			OK()
 	}
 	return s
 }
