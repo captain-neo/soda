@@ -141,27 +141,31 @@ func BindData(op *Operation) fiber.Handler {
 			return c.Next()
 		}
 
-		if op.TParameters != nil && op.TParameters.Kind() == reflect.Struct {
+		if op.TParameters != nil {
 			parameters := reflect.New(op.TParameters).Interface()
 			for _, parser := range op.parameterParsers() {
 				if err := parser(c, parameters); err != nil {
 					return err
 				}
 			}
-			if err := v.StructCtx(c.Context(), parameters); err != nil {
-				return err
+			if op.TParameters.Kind() == reflect.Struct {
+				if err := v.StructCtx(c.Context(), parameters); err != nil {
+					return err
+				}
 			}
 			c.Locals(KeyParameter, parameters)
 		}
 
 		// validate request body
-		if op.TRequestBody != nil && op.TRequestBody.Kind() == reflect.Struct {
+		if op.TRequestBody != nil {
 			requestBody := reflect.New(op.TRequestBody).Interface()
 			if err := c.BodyParser(&requestBody); err != nil {
 				return err
 			}
-			if err := v.StructCtx(c.Context(), requestBody); err != nil {
-				return err
+			if op.TRequestBody.Kind() == reflect.Struct {
+				if err := v.StructCtx(c.Context(), requestBody); err != nil {
+					return err
+				}
 			}
 			c.Locals(KeyRequestBody, requestBody)
 		}
