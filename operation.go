@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -133,6 +134,39 @@ func (op *Operation) parameterParsers() []parserFunc {
 	return funcs
 }
 
+func (op *Operation) bindParameter(c *fiber.Ctx, v *validator.Validate) error {
+	if op.TParameters != nil {
+		parameters := reflect.New(op.TParameters).Interface()
+		for _, parser := range op.parameterParsers() {
+			if err := parser(c, parameters); err != nil {
+				return err
+			}
+		}
+		if op.TParameters.Kind() == reflect.Struct {
+			if err := v.StructCtx(c.Context(), parameters); err != nil {
+				return err
+			}
+		}
+		c.Locals(KeyParameter, parameters)
+	}
+	return nil
+}
+func (op *Operation) bindBody(c *fiber.Ctx, v *validator.Validate) error {
+	if op.TRequestBody != nil {
+		requestBody := reflect.New(op.TRequestBody).Interface()
+		if err := c.BodyParser(&requestBody); err != nil {
+			return err
+		}
+		if op.TRequestBody.Kind() == reflect.Struct {
+			if err := v.StructCtx(c.Context(), requestBody); err != nil {
+				return err
+			}
+		}
+		c.Locals(KeyRequestBody, requestBody)
+	}
+	return nil
+}
+
 func BindData(op *Operation) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		for _, secHandler := range op.securityHandlers {
@@ -145,34 +179,11 @@ func BindData(op *Operation) fiber.Handler {
 		if v == nil {
 			return c.Next()
 		}
-
-		if op.TParameters != nil {
-			parameters := reflect.New(op.TParameters).Interface()
-			for _, parser := range op.parameterParsers() {
-				if err := parser(c, parameters); err != nil {
-					return err
-				}
-			}
-			if op.TParameters.Kind() == reflect.Struct {
-				if err := v.StructCtx(c.Context(), parameters); err != nil {
-					return err
-				}
-			}
-			c.Locals(KeyParameter, parameters)
+		if err := op.bindParameter(c, v); err != nil {
+			return err
 		}
-
-		// validate request body
-		if op.TRequestBody != nil {
-			requestBody := reflect.New(op.TRequestBody).Interface()
-			if err := c.BodyParser(&requestBody); err != nil {
-				return err
-			}
-			if op.TRequestBody.Kind() == reflect.Struct {
-				if err := v.StructCtx(c.Context(), requestBody); err != nil {
-					return err
-				}
-			}
-			c.Locals(KeyRequestBody, requestBody)
+		if err := op.bindBody(c, v); err != nil {
+			return err
 		}
 		// TODO: validate response also?
 		return c.Next()

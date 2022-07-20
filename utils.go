@@ -70,16 +70,7 @@ func toFloat(v string) float64 {
 	return f
 }
 
-// var (
-// 	matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
-// 	matchAllCap   = regexp.MustCompile("([a-z0-9])([A-Z])")
-// )
-
 func toCamelCase(str string) string {
 	kebab := strings.ReplaceAll(str, "-", " ")
 	return strings.ReplaceAll(cases.Title(language.English).String(kebab), " ", "")
-}
-
-func summary2operationID(summary string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(summary, " ", "-"), "/", "-")
 }

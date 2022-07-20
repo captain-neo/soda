@@ -9,8 +9,6 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 type Options struct {
@@ -184,13 +182,24 @@ func (s *Soda) Delete(path string, handlers ...fiber.Handler) *Operation {
 }
 func (s *Soda) Handle(path, method string, handlers ...fiber.Handler) *Operation {
 	summary := method + " " + path
-	idBuilder := strings.Builder{}
-	for _, p := range strings.Split(path, "/") {
-		if p != "" {
-			idBuilder.WriteString(cases.Title(language.English).String(p))
+	return s.newOperation(path, method, handlers...).SetSummary(summary).SetOperationID(genID(path, method))
+}
+
+func genID(path, method string) string {
+	nt := true
+	var s string
+	for _, r := range path {
+		switch r {
+		case ':', '-', '_', '/', '.':
+			nt = true
+		default:
+			if nt {
+				s += strings.ToUpper(string(r))
+			} else {
+				s += string(r)
+			}
+			nt = false
 		}
 	}
-	idBuilder.WriteString(method)
-	id := strings.ReplaceAll(idBuilder.String(), ":", "")
-	return s.newOperation(path, method, handlers...).SetSummary(summary).SetOperationID(id)
+	return s + method
 }
