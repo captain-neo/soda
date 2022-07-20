@@ -89,6 +89,11 @@ func (op *Operation) AddResponseWithContentType(status int, contentType string) 
 
 func (op *Operation) AddTags(tags ...string) *Operation {
 	op.Operation.Tags = append(op.Operation.Tags, tags...)
+	for _, tag := range tags {
+		if t := op.Soda.oaiGenerator.openapi.Tags.Get(tag); t == nil {
+			op.Soda.oaiGenerator.openapi.Tags = append(op.Soda.oaiGenerator.openapi.Tags, &openapi3.Tag{Name: tag})
+		}
+	}
 	return op
 }
 
