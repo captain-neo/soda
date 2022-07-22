@@ -81,18 +81,36 @@ func (s *Soda) RapiDoc() string {
     <title>RapiDoc</title>
     <script type="module" src="https://cdn.jsdelivr.net/npm/rapidoc/dist/rapidoc-min.min.js"></script>
   </head>
+  <style>
+    rapi-doc::part(section-navbar) { /* <<< targets navigation bar */
+      background: linear-gradient(90deg, #3d4e70, #2e3746);
+    }
+  </style>
   <body>
-    <rapi-doc id="thedoc" theme="light" show-header="true" show-components="true" allow-try="true"
-      allow-authentication="true" regular-font="Open Sans" mono-font="Roboto Mono" font-size="large"
-      schema-description-expanded="true">
+    <rapi-doc id="thedoc" 
+    theme="dark" 
+    primary-color = "#f54c47"
+    bg-color = "#2e3746"
+    text-color = "#bacdee"
+    default-schema-tab="model" 
+    allow-search="false"
+    allow-advanced-search="true"
+    show-info="true" 
+    show-header="true" 
+    show-components="true" 
+    schema-style="table"
+    show-method-in-nav-bar="as-colored-block" 
+    allow-try="true"
+    allow-authentication="true" 
+    regular-font="Open Sans" 
+    mono-font="Roboto Mono" 
+    font-size="large"
+    schema-description-expanded="true">
     </rapi-doc>
     <script>
       document.addEventListener('DOMContentLoaded', (event) => {
         let docEl = document.getElementById("thedoc");
         docEl.loadSpec({:spec});
-        docEl.setAttribute('theme','light');
-        docEl.setAttribute('bg-color','#ecf1f7');
-        docEl.setAttribute('text-color','#133863');
       })
     </script>
   </body>
